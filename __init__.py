@@ -16,7 +16,6 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-# <pep8-80 compliant>
 import bpy
 from bpy.app.handlers import persistent
 import random
@@ -25,11 +24,12 @@ bl_info = {
     'name': 'Typewriter Text',
     'description': 'Typewriter Text effect for font objects',
     'author': 'Bassam Kurdali, Vilem Novak, Jimmy Berry',
-    'version': (0, 3, 1),
-    'blender': (2, 7, 0),
+    'version': (0, 3, 2),
+    'blender': (2, 80, 0),
     'location': 'Properties Editor, Text Context',
     'url': 'https://github.com/boombatower/blender-typewriter-addon',
     'category': 'Text'}
+
 
 def randomize(t,width):
     nt=''
@@ -52,6 +52,7 @@ def uptext(text):
     '''
     slice the source text up to the character_count
     '''
+
     source = text.source_text
     if source in bpy.data.texts:
         if text.separator!='':    strings=bpy.data.texts[source].as_string().split(text.separator)
@@ -67,8 +68,8 @@ def uptext(text):
         t = source
 
     #randomize
-    if text.use_randomize and len(t)>text.character_count:
-        t=randomize(t[:text.character_count],text.randomize_width)
+    if text.use_randomize and len(t) > text.character_count:
+        t = randomize(t[:text.character_count], text.randomize_width)
 
     prefix = ''
     if text.preserve_newline and text.character_start > 0:
@@ -76,7 +77,11 @@ def uptext(text):
     if text.preserve_space and text.character_start > 0:
         prefix += ' ' * (text.character_start - (t.rfind('\n', 0, text.character_start) + 1))
 
-    text.body = prefix + t[text.character_start:text.character_count]
+    new_text = prefix + t[text.character_start:text.character_count]
+    count = text.character_count
+    
+    text.body = new_text
+    
 
 @persistent
 def typewriter_text_update_frame(scene):
@@ -87,16 +92,12 @@ def typewriter_text_update_frame(scene):
         if text.type == 'FONT' and text.data.use_animated_text:
             uptext(text.data)
 
-
 def update_func(self, context):
     '''
     updates when changing the value
     '''
     uptext(self)
-
-
-
-
+    
 
 
 class TEXT_PT_Typewriter(bpy.types.Panel):
@@ -122,11 +123,12 @@ class TEXT_PT_Typewriter(bpy.types.Panel):
         st = context.space_data
         text = context.active_object.data
         layout = self.layout
-        layout.prop(text,'character_start')
-        layout.prop(text,'preserve_newline')
-        layout.prop(text,'preserve_space')
-        layout.prop(text,'character_count')
-        layout.prop(text,'source_text')
+        layout.prop(text,'preserve_newline', text="Preserve Newline")
+        layout.prop(text,'preserve_space', text="Preserve Space")
+        layout.prop(text,'source_text', text="Source Text")
+        layout.prop(text,'character_start', text="Character Start")
+        layout.prop(text,'character_count', text="Character Count")
+        
         if text.source_text in bpy.data.texts:
             layout.prop(text,'separator')
             layout.prop(text,'text_index')
@@ -134,39 +136,78 @@ class TEXT_PT_Typewriter(bpy.types.Panel):
         if text.use_randomize:
             layout.prop(text,'randomize_width')
 
+
+classes = [
+    TEXT_PT_Typewriter
+]
+
+
 def register():
     '''
     addon registration function
     '''
     # create properties
     bpy.types.TextCurve.character_start = bpy.props.IntProperty(
-      name="character_start",update=update_func, min=0, options={'ANIMATABLE'})
+        name="character_start",
+        update=update_func,
+        min=0, 
+        options={'ANIMATABLE'}
+    )
+    
+    bpy.types.TextCurve.locked = bpy.props.BoolProperty(
+        name="locked", default=True)
+    
     bpy.types.TextCurve.preserve_newline = bpy.props.BoolProperty(
-      name="preserve_newline", default=True)
+        name="preserve_newline", default=True)
+    
     bpy.types.TextCurve.preserve_space = bpy.props.BoolProperty(
       name="preserve_space", default=True)
+    
     bpy.types.TextCurve.character_count = bpy.props.IntProperty(
-      name="character_count",update=update_func, min=0, options={'ANIMATABLE'})
+        name="character_count",
+        update=update_func, 
+        min=0,
+        default=0,
+        options={'ANIMATABLE'},
+    )
+    
     bpy.types.TextCurve.backup_text = bpy.props.StringProperty(
-      name="backup_text")
+        name="backup_text")
+    
     bpy.types.TextCurve.use_animated_text = bpy.props.BoolProperty(
-      name="use_animated_text", default=False)
+        name="use_animated_text", default=False)
+    
     bpy.types.TextCurve.source_text = bpy.props.StringProperty(
-      name="source_text")
-
+        name="source_text")
 
     bpy.types.TextCurve.text_index = bpy.props.IntProperty(
-      name="index",update=update_func, min=0, options={'ANIMATABLE'})
+        name="index",
+        update=update_func, 
+        min=0, 
+        options={'ANIMATABLE'}
+    )
+      
     bpy.types.TextCurve.separator = bpy.props.StringProperty(
-      name="separator", default='#' )
+        name="separator", default='#')
+      
     bpy.types.TextCurve.use_randomize = bpy.props.BoolProperty(
-      name="randomize", default=False)
+        name="randomize", default=False)
+      
     bpy.types.TextCurve.randomize_width = bpy.props.IntProperty(
-      name="randomize width",update=update_func, default=10, min=0, options={'ANIMATABLE'})
+        name="randomize width",
+        update=update_func, 
+        default=10, 
+        min=0, 
+        options={'ANIMATABLE'}
+    )
+    
     # register the module:
-    bpy.utils.register_module(__name__)
+    from bpy.utils import register_class
+    for cls in classes:
+        register_class(cls)
+    
     # add the frame change handler
-    bpy.app.handlers.scene_update_pre.append(typewriter_text_update_frame)
+    bpy.app.handlers.frame_change_pre.append(typewriter_text_update_frame)
 
 
 def unregister():
@@ -174,12 +215,12 @@ def unregister():
     addon unregistration function
     '''
     # remove the frame change handler
-    bpy.app.handlers.scene_update_pre.remove(typewriter_text_update_frame)
+    bpy.app.handlers.frame_change_pre.remove(typewriter_text_update_frame)
 
-    # remove the properties
-    # XXX but how???
     # remove the panel
-    bpy.utils.unregister_module(__name__)
+    from bpy.utils import unregister_class
+    for cls in reversed(classes):
+        unregister_class(cls)
 
 if __name__ == "__main__":
     register()
