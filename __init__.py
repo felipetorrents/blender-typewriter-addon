@@ -48,7 +48,7 @@ def randomize(t,width):
     return(nt)
 
 
-def uptext(text):
+def uptext(text, eval_text):
     '''
     slice the source text up to the character_count
     '''
@@ -68,29 +68,32 @@ def uptext(text):
         t = source
 
     #randomize
-    if text.use_randomize and len(t) > text.character_count:
-        t = randomize(t[:text.character_count], text.randomize_width)
+    if eval_text.use_randomize and len(t) > eval_text.character_count:
+        t = randomize(t[:eval_text.character_count], eval_text.randomize_width)
 
     prefix = ''
-    if text.preserve_newline and text.character_start > 0:
-        prefix = '\n' * t.count('\n', 0, text.character_start)
-    if text.preserve_space and text.character_start > 0:
-        prefix += ' ' * (text.character_start - (t.rfind('\n', 0, text.character_start) + 1))
+    if eval_text.preserve_newline and eval_text.character_start > 0:
+        prefix = '\n' * t.count('\n', 0, eval_text.character_start)
+    if eval_text.preserve_space and eval_text.character_start > 0:
+        prefix += ' ' * (eval_text.character_start - (t.rfind('\n', 0, eval_text.character_start) + 1))
 
-    new_text = prefix + t[text.character_start:text.character_count]
-    count = text.character_count
+    new_text = prefix + t[eval_text.character_start:eval_text.character_count]
+    count = eval_text.character_count
     
     text.body = new_text
     
 
 @persistent
-def typewriter_text_update_frame(scene):
+def typewriter_text_update_frame(scene, depsgraph):
     '''
     sadly we need this for frame change updating
     '''
+
     for text in scene.objects:
         if text.type == 'FONT' and text.data.use_animated_text:
-            uptext(text.data)
+            eval_text = text.evaluated_get(depsgraph)
+            uptext(text.data, eval_text.data)
+
 
 def update_func(self, context):
     '''
@@ -207,7 +210,7 @@ def register():
         register_class(cls)
     
     # add the frame change handler
-    bpy.app.handlers.frame_change_pre.append(typewriter_text_update_frame)
+    bpy.app.handlers.frame_change_post.append(typewriter_text_update_frame)
 
 
 def unregister():
@@ -215,7 +218,7 @@ def unregister():
     addon unregistration function
     '''
     # remove the frame change handler
-    bpy.app.handlers.frame_change_pre.remove(typewriter_text_update_frame)
+    bpy.app.handlers.frame_change_post.remove(typewriter_text_update_frame)
 
     # remove the panel
     from bpy.utils import unregister_class
