@@ -23,8 +23,8 @@ import random
 bl_info = {
     'name': 'Typewriter Text',
     'description': 'Typewriter Text effect for font objects',
-    'author': 'Bassam Kurdali, Vilem Novak, Jimmy Berry',
-    'version': (0, 3, 2),
+    'author': 'Bassam Kurdali, Vilem Novak, Jimmy Berry, gandalf3, Felipe Torrents',
+    'version': (0, 3, 4),
     'blender': (2, 80, 0),
     'location': 'Properties Editor, Text Context',
     'url': 'https://github.com/boombatower/blender-typewriter-addon',
@@ -53,7 +53,12 @@ def uptext(text, eval_text):
     slice the source text up to the character_count
     '''
 
+
     source = text.source_text
+
+    #Line brake character
+    source = source.replace(text.break_character, "\n")
+
     if source in bpy.data.texts:
         if text.separator!='':    strings=bpy.data.texts[source].as_string().split(text.separator)
         else:
@@ -129,6 +134,7 @@ class TEXT_PT_Typewriter(bpy.types.Panel):
         layout.prop(text,'preserve_newline', text="Preserve Newline")
         layout.prop(text,'preserve_space', text="Preserve Space")
         layout.prop(text,'source_text', text="Source Text")
+        layout.prop(text,'break_character', text="Break Character")
         layout.prop(text,'character_start', text="Character Start")
         layout.prop(text,'character_count', text="Character Count")
         
@@ -181,7 +187,10 @@ def register():
         name="use_animated_text", default=False)
     
     bpy.types.TextCurve.source_text = bpy.props.StringProperty(
-        name="source_text")
+        name="Source Text")
+
+    bpy.types.TextCurve.break_character = bpy.props.StringProperty(
+        name="Define a character to use as Line Break. Default is underscore '_'", default="_")
 
     bpy.types.TextCurve.text_index = bpy.props.IntProperty(
         name="index",
